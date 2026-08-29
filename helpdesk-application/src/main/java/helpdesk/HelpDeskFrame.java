@@ -17,6 +17,7 @@ public class HelpDeskFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
     private final HelpDesk helpDesk;
+    private final Runnable logoutAction;
     private final JTabbedPane tabs;
     private final DashboardPanel dashboardPanel;
     private final CustomersPanel customersPanel;
@@ -25,11 +26,16 @@ public class HelpDeskFrame extends JFrame {
     private final SupportAgentsPanel supportAgentsPanel;
 
     public HelpDeskFrame(HelpDesk helpDesk) {
+        this(helpDesk, null);
+    }
+
+    public HelpDeskFrame(HelpDesk helpDesk, Runnable logoutAction) {
         super("FiberNet HelpDesk");
         if (helpDesk == null) {
             throw new IllegalArgumentException("HelpDesk is required.");
         }
         this.helpDesk = helpDesk;
+        this.logoutAction = logoutAction;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 580));
@@ -74,14 +80,26 @@ public class HelpDeskFrame extends JFrame {
                 refreshAll();
             }
         });
+        fileMenu.add(refreshItem);
+        if (logoutAction != null) {
+            JMenuItem logoutItem = new JMenuItem("Logout");
+            logoutItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    performLogout();
+                }
+            });
+            fileMenu.addSeparator();
+            fileMenu.add(logoutItem);
+        }
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
                 dispose();
+                System.exit(0);
             }
         });
-        fileMenu.add(refreshItem);
         fileMenu.addSeparator();
         fileMenu.add(exitItem);
 
@@ -192,6 +210,13 @@ public class HelpDeskFrame extends JFrame {
         ticketsPanel.refreshData();
         productsPanel.refreshData();
         supportAgentsPanel.refreshData();
+    }
+
+    void performLogout() {
+        dispose();
+        if (logoutAction != null) {
+            logoutAction.run();
+        }
     }
 
     HelpDesk getHelpDesk() {

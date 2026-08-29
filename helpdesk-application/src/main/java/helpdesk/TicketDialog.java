@@ -3,6 +3,7 @@ package helpdesk;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -27,23 +28,30 @@ public class TicketDialog extends JDialog {
     private final HelpDesk helpDesk;
     private final ArrayList<Customer> customers;
     private final ArrayList<Product> products;
-    private final ArrayList<SupportAgent> agents;
     private final JTextField idField;
     private final JComboBox<String> customerBox;
     private final JComboBox<String> productBox;
     private final JComboBox<TicketType> typeBox;
-    private final JComboBox<String> agentBox;
     private final JTextField subjectField;
     private final JTextArea descriptionArea;
     private final JLabel priorityValue;
     private boolean saved;
 
     public TicketDialog(HelpDeskFrame owner, HelpDesk helpDesk) {
-        super(owner, "Register New Ticket", true);
+        this((Frame) owner, helpDesk, null);
+    }
+
+    public TicketDialog(Frame owner, HelpDesk helpDesk, Customer fixedCustomer) {
+        super(owner, fixedCustomer == null ? "Register New Ticket" : "Submit Support Ticket",
+                true);
         this.helpDesk = helpDesk;
-        customers = helpDesk.getCustomers();
+        customers = new ArrayList<Customer>();
+        if (fixedCustomer == null) {
+            customers.addAll(helpDesk.getCustomers());
+        } else {
+            customers.add(fixedCustomer);
+        }
         products = new ArrayList<Product>();
-        agents = helpDesk.getSupportAgents();
         saved = false;
 
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -55,13 +63,12 @@ public class TicketDialog extends JDialog {
         for (Customer customer : customers) {
             customerBox.addItem(customer.getId() + " - " + customer.getName());
         }
+        if (fixedCustomer != null) {
+            customerBox.setEnabled(false);
+        }
         productBox = new JComboBox<String>();
         productBox.setPrototypeDisplayValue("P-000 - Institution Secure Network");
         typeBox = new JComboBox<TicketType>(TicketType.values());
-        agentBox = new JComboBox<String>();
-        for (SupportAgent agent : agents) {
-            agentBox.addItem(agent.getId() + " - " + agent.getFullName());
-        }
         subjectField = new JTextField(25);
         descriptionArea = new JTextArea(5, 25);
         descriptionArea.setLineWrap(true);
@@ -81,9 +88,10 @@ public class TicketDialog extends JDialog {
         addField(form, constraints, row++, "Customer:", customerBox);
         addField(form, constraints, row++, "Product / Service:", productBox);
         addField(form, constraints, row++, "Ticket Type:", typeBox);
-        addField(form, constraints, row++, "Responsible Agent:", agentBox);
         addField(form, constraints, row++, "Subject:", subjectField);
         addField(form, constraints, row++, "Calculated Priority:", priorityValue);
+        addField(form, constraints, row++, "Initial Status:", new JLabel("Open"));
+        addField(form, constraints, row++, "Assigned Agent:", new JLabel("Unassigned"));
 
         constraints.gridy = row;
         constraints.gridx = 0;
@@ -108,7 +116,7 @@ public class TicketDialog extends JDialog {
         refreshCustomerProducts();
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
-        JButton saveButton = new JButton("Create Ticket");
+        JButton saveButton = new JButton(fixedCustomer == null ? "Create Ticket" : "Submit Ticket");
         getRootPane().setDefaultButton(saveButton);
         saveButton.addActionListener(new ActionListener() {
             @Override
@@ -170,17 +178,12 @@ public class TicketDialog extends JDialog {
                     "Product required", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (agentBox.getSelectedIndex() < 0) {
-            GuiUtil.showSelectionRequired(this, "support agent");
-            return;
-        }
         try {
             Customer customer = customers.get(customerBox.getSelectedIndex());
             Product product = products.get(productBox.getSelectedIndex());
-            SupportAgent agent = agents.get(agentBox.getSelectedIndex());
             helpDesk.createTicket(idField.getText(), customer.getId(), product.getId(),
-                    agent.getId(), (TicketType) typeBox.getSelectedItem(),
-                    subjectField.getText(), descriptionArea.getText());
+                    (TicketType) typeBox.getSelectedItem(), subjectField.getText(),
+                    descriptionArea.getText());
             saved = true;
             dispose();
         } catch (HelpDeskException | IllegalArgumentException exception) {

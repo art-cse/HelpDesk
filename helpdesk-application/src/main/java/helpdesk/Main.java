@@ -14,11 +14,13 @@ public class Main {
 
         try {
             final HelpDesk helpDesk = DemoData.createHelpDeskWithSampleData();
+            final AuthenticationService authentication =
+                    DemoData.createAuthenticationService();
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    HelpDeskFrame window = new HelpDeskFrame(helpDesk);
-                    window.setVisible(true);
+                    LoginFrame loginWindow = new LoginFrame(helpDesk, authentication);
+                    loginWindow.setVisible(true);
                 }
             });
         } catch (HelpDeskException | IllegalArgumentException exception) {

@@ -3,6 +3,8 @@ package helpdesk;
 import java.util.ArrayList;
 
 public class HelpDesk {
+    public static final String UNASSIGNED_AGENT_FILTER = "UNASSIGNED";
+
     private final Registry<Customer> customers;
     private final Registry<Product> products;
     private final Registry<SupportAgent> supportAgents;
@@ -48,22 +50,20 @@ public class HelpDesk {
     }
 
     public Ticket createTicket(String ticketId, String customerId, String productId,
-            String agentId, TicketType type, String title, String description)
-            throws HelpDeskException {
+            TicketType type, String title, String description) throws HelpDeskException {
         Customer customer = getCustomer(customerId);
         Product product = getProduct(productId);
-        SupportAgent agent = getSupportAgent(agentId);
 
         if (!customer.hasProduct(productId)) {
-            throw new HelpDeskException("The selected product is not associated with this customer.");
+            throw new HelpDeskException(
+                    "The selected product is not associated with this customer.");
         }
 
         TreatmentPriority priority = customer.getTreatmentPriority();
-        Ticket ticket = new Ticket(ticketId, customer, product, agent, type, title,
+        Ticket ticket = new Ticket(ticketId, customer, product, type, title,
                 description, priority);
         tickets.add(ticket);
         customer.addTicketToHistory(ticket);
-        agent.assignTicket(ticket);
         return ticket;
     }
 
@@ -74,7 +74,9 @@ public class HelpDesk {
         if (previousAgent == newAgent) {
             throw new HelpDeskException("This agent is already responsible for the ticket.");
         }
-        previousAgent.removeTicket(ticket);
+        if (previousAgent != null) {
+            previousAgent.removeTicket(ticket);
+        }
         ticket.reassignAgent(newAgent);
         newAgent.assignTicket(ticket);
     }
@@ -176,14 +178,24 @@ public class HelpDesk {
                     || ticket.getCustomer().getName().toLowerCase().contains(searchText)
                     || ticket.getProduct().getName().toLowerCase().contains(searchText);
             boolean matchesStatus = status == null || ticket.getStatus() == status;
-            boolean matchesAgent = agentId == null || agentId.isEmpty()
-                    || ticket.getResponsibleAgent().getId().equalsIgnoreCase(agentId);
+            boolean matchesAgent = matchesAgentFilter(ticket, agentId);
 
             if (matchesText && matchesStatus && matchesAgent) {
                 results.add(ticket);
             }
         }
         return results;
+    }
+
+    private boolean matchesAgentFilter(Ticket ticket, String agentId) {
+        if (agentId == null || agentId.isEmpty()) {
+            return true;
+        }
+        if (UNASSIGNED_AGENT_FILTER.equals(agentId)) {
+            return ticket.getResponsibleAgent() == null;
+        }
+        return ticket.getResponsibleAgent() != null
+                && ticket.getResponsibleAgent().getId().equalsIgnoreCase(agentId);
     }
 
     public ArrayList<Ticket> getTicketsInPriorityOrder() {

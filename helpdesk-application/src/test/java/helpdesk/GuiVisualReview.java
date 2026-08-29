@@ -1,6 +1,7 @@
 package helpdesk;
 
-import java.awt.Dialog;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
@@ -10,6 +11,7 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 import javax.swing.JDialog;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -22,138 +24,208 @@ public class GuiVisualReview {
         }
 
         final HelpDesk helpDesk = DemoData.createHelpDeskWithSampleData();
-        final HelpDeskFrame[] frameHolder = new HelpDeskFrame[1];
+        final AuthenticationService authentication = DemoData.createAuthenticationService();
+
+        LoginFrame login = createLogin(helpDesk, authentication);
+        capture(login, new File(reviewDirectory, "01-login.png"));
+        login.dispose();
+
+        HelpDeskFrame admin = createAdmin(helpDesk);
         SwingUtilities.invokeAndWait(new Runnable() {
             @Override
             public void run() {
-                frameHolder[0] = new HelpDeskFrame(helpDesk);
-                frameHolder[0].setVisible(true);
+                admin.getTabs().setSelectedIndex(2);
             }
         });
-        HelpDeskFrame frame = frameHolder[0];
+        capture(admin, new File(reviewDirectory, "02-admin-tickets.png"));
 
-        String[] tabNames = { "01-overview", "02-customers", "03-tickets",
-                "04-products", "05-agents" };
-        for (int i = 0; i < tabNames.length; i++) {
-            final int tabIndex = i;
-            SwingUtilities.invokeAndWait(new Runnable() {
-                @Override
-                public void run() {
-                    frame.getTabs().setSelectedIndex(tabIndex);
-                    frame.toFront();
-                }
-            });
-            Thread.sleep(300);
-            capture(frame, new File(reviewDirectory, tabNames[i] + ".png"));
-        }
+        TicketDialog adminTicket = createAdminTicketDialog(admin, helpDesk);
+        capture(adminTicket, new File(reviewDirectory, "03-admin-new-ticket.png"));
+        adminTicket.dispose();
 
-        final CustomerDialog[] customerDialog = new CustomerDialog[1];
+        AssignAgentDialog assignment = createAssignmentDialog(admin, helpDesk,
+                helpDesk.getTicket("T-1004"));
+        capture(assignment, new File(reviewDirectory, "04-assign-agent.png"));
+        assignment.dispose();
+
+        AgentFrame agent = createAgent(helpDesk, helpDesk.getSupportAgent("A-01"));
+        capture(agent, new File(reviewDirectory, "05-agent-my-tickets.png"));
+
+        TicketStatusDialog status = createStatusDialog(agent, helpDesk,
+                helpDesk.getTicket("T-1001"));
+        capture(status, new File(reviewDirectory, "06-agent-update-status.png"));
+        status.dispose();
+        agent.dispose();
+
+        Customer customer = helpDesk.getCustomer("C-RES-001");
+        CustomerFrame customerFrame = createCustomer(helpDesk, customer);
+        capture(customerFrame, new File(reviewDirectory, "07-customer-account.png"));
+
+        JTabbedPane customerTabs = findComponent(customerFrame, JTabbedPane.class);
         SwingUtilities.invokeAndWait(new Runnable() {
             @Override
             public void run() {
-                customerDialog[0] = new CustomerDialog(frame, helpDesk, null);
-                customerDialog[0].setModal(false);
-                customerDialog[0].setVisible(true);
+                customerTabs.setSelectedIndex(2);
             }
         });
-        Thread.sleep(250);
-        capture(customerDialog[0], new File(reviewDirectory, "06-register-customer.png"));
-        customerDialog[0].dispose();
+        capture(customerFrame, new File(reviewDirectory, "08-customer-tickets.png"));
 
-        final TicketDialog[] ticketDialog = new TicketDialog[1];
-        SwingUtilities.invokeAndWait(new Runnable() {
-            @Override
-            public void run() {
-                ticketDialog[0] = new TicketDialog(frame, helpDesk);
-                ticketDialog[0].setModal(false);
-                ticketDialog[0].setVisible(true);
-            }
-        });
-        Thread.sleep(250);
-        capture(ticketDialog[0], new File(reviewDirectory, "07-register-ticket.png"));
-        ticketDialog[0].dispose();
+        TicketDialog customerTicket = createCustomerTicketDialog(customerFrame, helpDesk,
+                customer);
+        capture(customerTicket, new File(reviewDirectory, "09-customer-new-ticket.png"));
+        customerTicket.dispose();
 
-        final AssignProductDialog[] productDialog = new AssignProductDialog[1];
-        SwingUtilities.invokeAndWait(new Runnable() {
-            @Override
-            public void run() {
-                productDialog[0] = new AssignProductDialog(frame, helpDesk,
-                        helpDesk.getCustomers().get(0));
-                productDialog[0].setModal(false);
-                productDialog[0].setVisible(true);
-            }
-        });
-        Thread.sleep(250);
-        capture(productDialog[0], new File(reviewDirectory, "08-assign-product.png"));
-        productDialog[0].dispose();
+        TextDialog history = createHistoryDialog(customerFrame, helpDesk.getTicket("T-1003"));
+        capture(history, new File(reviewDirectory, "10-customer-ticket-history.png"));
+        history.dispose();
 
-        SwingUtilities.invokeAndWait(new Runnable() {
-            @Override
-            public void run() {
-                frame.getTabs().setSelectedIndex(2);
-                frame.getTicketsPanel().getTicketTable().setRowSelectionInterval(0, 0);
-            }
-        });
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                frame.getTicketsPanel().updateSelectedStatus();
-            }
-        });
-        JDialog statusDialog = waitForDialog("Update Ticket Status");
-        capture(statusDialog, new File(reviewDirectory, "09-update-status.png"));
-        statusDialog.dispose();
-
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                frame.getTicketsPanel().assignSelectedAgent();
-            }
-        });
-        JDialog agentDialog = waitForDialog("Assign Agent");
-        capture(agentDialog, new File(reviewDirectory, "10-assign-agent.png"));
-        agentDialog.dispose();
-
-        final TextDialog[] historyDialog = new TextDialog[1];
-        SwingUtilities.invokeAndWait(new Runnable() {
-            @Override
-            public void run() {
-                String history = "T-1003 - Router restarts every evening\n\n"
-                        + helpDesk.getCustomers().get(2).getTicketHistory().get(0)
-                                .getStatusHistory().get(0)
-                        + "\n\nHistory entries continue in the scrollable area.";
-                historyDialog[0] = new TextDialog(frame, "Ticket History - T-1003", history);
-                historyDialog[0].setModal(false);
-                historyDialog[0].setVisible(true);
-            }
-        });
-        Thread.sleep(250);
-        capture(historyDialog[0], new File(reviewDirectory, "11-ticket-history.png"));
-        historyDialog[0].dispose();
-
-        frame.dispose();
-        System.out.println("Captured 11 Swing screens in " + reviewDirectory.getAbsolutePath());
+        customerFrame.dispose();
+        admin.dispose();
+        System.out.println("Captured 10 role-aware Swing screens in "
+                + reviewDirectory.getAbsolutePath());
     }
 
-    private static JDialog waitForDialog(String titlePrefix) throws Exception {
-        for (int attempt = 0; attempt < 50; attempt++) {
-            for (Window window : Window.getWindows()) {
-                if (window instanceof JDialog && window.isVisible()) {
-                    JDialog dialog = (JDialog) window;
-                    if (dialog.getTitle().startsWith(titlePrefix)) {
-                        Thread.sleep(250);
-                        return dialog;
-                    }
+    private static LoginFrame createLogin(final HelpDesk helpDesk,
+            final AuthenticationService authentication) throws Exception {
+        final LoginFrame[] holder = new LoginFrame[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new LoginFrame(helpDesk, authentication);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static HelpDeskFrame createAdmin(final HelpDesk helpDesk) throws Exception {
+        final HelpDeskFrame[] holder = new HelpDeskFrame[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new HelpDeskFrame(helpDesk);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static TicketDialog createAdminTicketDialog(final HelpDeskFrame owner,
+            final HelpDesk helpDesk) throws Exception {
+        final TicketDialog[] holder = new TicketDialog[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new TicketDialog(owner, helpDesk);
+                holder[0].setModal(false);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static AssignAgentDialog createAssignmentDialog(final HelpDeskFrame owner,
+            final HelpDesk helpDesk, final Ticket ticket) throws Exception {
+        final AssignAgentDialog[] holder = new AssignAgentDialog[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new AssignAgentDialog(owner, helpDesk, ticket);
+                holder[0].setModal(false);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static AgentFrame createAgent(final HelpDesk helpDesk, final SupportAgent agent)
+            throws Exception {
+        final AgentFrame[] holder = new AgentFrame[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new AgentFrame(helpDesk, agent, null);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static TicketStatusDialog createStatusDialog(final AgentFrame owner,
+            final HelpDesk helpDesk, final Ticket ticket) throws Exception {
+        final TicketStatusDialog[] holder = new TicketStatusDialog[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new TicketStatusDialog(owner, helpDesk, ticket);
+                holder[0].setModal(false);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static CustomerFrame createCustomer(final HelpDesk helpDesk,
+            final Customer customer) throws Exception {
+        final CustomerFrame[] holder = new CustomerFrame[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new CustomerFrame(helpDesk, customer, null);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static TicketDialog createCustomerTicketDialog(final CustomerFrame owner,
+            final HelpDesk helpDesk, final Customer customer) throws Exception {
+        final TicketDialog[] holder = new TicketDialog[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new TicketDialog(owner, helpDesk, customer);
+                holder[0].setModal(false);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static TextDialog createHistoryDialog(final CustomerFrame owner,
+            final Ticket ticket) throws Exception {
+        final TextDialog[] holder = new TextDialog[1];
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void run() {
+                holder[0] = new TextDialog(owner, "Ticket History",
+                        GuiUtil.formatTicketHistory(ticket));
+                holder[0].setModal(false);
+                holder[0].setVisible(true);
+            }
+        });
+        return holder[0];
+    }
+
+    private static <T extends Component> T findComponent(Container container,
+            Class<T> componentType) {
+        for (Component component : container.getComponents()) {
+            if (componentType.isInstance(component)) {
+                return componentType.cast(component);
+            }
+            if (component instanceof Container) {
+                T result = findComponent((Container) component, componentType);
+                if (result != null) {
+                    return result;
                 }
             }
-            Thread.sleep(100);
         }
-        throw new IllegalStateException("Dialog did not open: " + titlePrefix);
+        return null;
     }
 
     private static void capture(Window window, File destination) throws Exception {
         window.toFront();
-        Thread.sleep(150);
+        Thread.sleep(250);
         Point location = window.getLocationOnScreen();
         Rectangle bounds = new Rectangle(location.x, location.y,
                 window.getWidth(), window.getHeight());

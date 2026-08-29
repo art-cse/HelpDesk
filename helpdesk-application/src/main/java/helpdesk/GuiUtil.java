@@ -62,6 +62,18 @@ final class GuiUtil {
         return date.format(DATE_FORMATTER);
     }
 
+    static String formatTicketHistory(Ticket ticket) {
+        StringBuilder text = new StringBuilder();
+        text.append("Ticket: ").append(ticket.getId()).append(" - ")
+                .append(ticket.getTitle()).append("\n");
+        text.append("Customer: ").append(ticket.getCustomer().getName()).append("\n");
+        text.append("Assigned agent: ").append(ticket.getResponsibleAgentName()).append("\n\n");
+        for (StatusChange change : ticket.getStatusHistory()) {
+            text.append(change).append("\n");
+        }
+        return text.toString();
+    }
+
     static JTextArea createTextArea(String text) {
         JTextArea area = new JTextArea(text);
         area.setEditable(false);

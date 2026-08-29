@@ -1,11 +1,7 @@
 package helpdesk;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -13,13 +9,11 @@ import java.util.ArrayList;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JLabel;
 
 public class TicketsPanel extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -148,6 +142,7 @@ public class TicketsPanel extends JPanel {
         filterAgents.clear();
         agentBox.removeAllItems();
         agentBox.addItem("All");
+        agentBox.addItem("Unassigned");
         for (SupportAgent agent : helpDesk.getSupportAgents()) {
             filterAgents.add(agent);
             agentBox.addItem(agent.getId() + " - " + agent.getFullName());
@@ -161,15 +156,19 @@ public class TicketsPanel extends JPanel {
     void applyFilters() {
         TicketStatus status = statusBox.getSelectedIndex() == 0
                 ? null : TicketStatus.values()[statusBox.getSelectedIndex() - 1];
-        String agentId = agentBox.getSelectedIndex() <= 0
-                ? null : filterAgents.get(agentBox.getSelectedIndex() - 1).getId();
+        String agentId = null;
+        if (agentBox.getSelectedIndex() == 1) {
+            agentId = HelpDesk.UNASSIGNED_AGENT_FILTER;
+        } else if (agentBox.getSelectedIndex() >= 2) {
+            agentId = filterAgents.get(agentBox.getSelectedIndex() - 2).getId();
+        }
         ArrayList<Ticket> tickets = helpDesk.filterTickets(searchField.getText(), status, agentId);
 
         tableModel.setRowCount(0);
         for (Ticket ticket : tickets) {
             tableModel.addRow(new Object[] {
                 ticket.getId(), ticket.getCustomer().getName(), ticket.getTitle(),
-                ticket.getPriority(), ticket.getResponsibleAgent().getFullName(),
+                ticket.getPriority(), ticket.getResponsibleAgentName(),
                 ticket.getStatus(), GuiUtil.formatDate(ticket.getCreatedAt())
             });
         }
@@ -188,33 +187,10 @@ public class TicketsPanel extends JPanel {
         if (ticket == null) {
             return;
         }
-        ArrayList<SupportAgent> agents = helpDesk.getSupportAgents();
-        JComboBox<String> selection = new JComboBox<String>();
-        int currentIndex = 0;
-        for (int i = 0; i < agents.size(); i++) {
-            SupportAgent agent = agents.get(i);
-            selection.addItem(agent.getId() + " - " + agent.getFullName());
-            if (agent == ticket.getResponsibleAgent()) {
-                currentIndex = i;
-            }
-        }
-        selection.setSelectedIndex(currentIndex);
-
-        JPanel panel = new JPanel(new BorderLayout(6, 6));
-        panel.add(new JLabel("Responsible support agent:"), BorderLayout.NORTH);
-        panel.add(selection, BorderLayout.CENTER);
-        int result = JOptionPane.showConfirmDialog(owner, panel,
-                "Assign Agent - " + ticket.getId(), JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE);
-        if (result != JOptionPane.OK_OPTION) {
-            return;
-        }
-        try {
-            helpDesk.assignAgentToTicket(ticket.getId(),
-                    agents.get(selection.getSelectedIndex()).getId());
+        AssignAgentDialog dialog = new AssignAgentDialog(owner, helpDesk, ticket);
+        dialog.setVisible(true);
+        if (dialog.isSaved()) {
             refreshAction.run();
-        } catch (HelpDeskException exception) {
-            GuiUtil.showError(this, exception);
         }
     }
 
@@ -223,99 +199,11 @@ public class TicketsPanel extends JPanel {
         if (ticket == null) {
             return;
         }
-
-        JComboBox<TicketStatus> statusSelection =
-                new JComboBox<TicketStatus>(TicketStatus.values());
-        statusSelection.setSelectedItem(getSuggestedNextStatus(ticket.getStatus()));
-        JTextArea noteArea = new JTextArea(4, 30);
-        noteArea.setLineWrap(true);
-        noteArea.setWrapStyleWord(true);
-
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.insets = new Insets(4, 4, 4, 4);
-        constraints.anchor = GridBagConstraints.NORTHWEST;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        form.add(new JLabel("Current status:"), constraints);
-        constraints.gridx = 1;
-        form.add(new JLabel(ticket.getStatus().toString()), constraints);
-        constraints.gridx = 0;
-        constraints.gridy = 1;
-        form.add(new JLabel("New status:"), constraints);
-        constraints.gridx = 1;
-        form.add(statusSelection, constraints);
-        constraints.gridx = 0;
-        constraints.gridy = 2;
-        form.add(new JLabel("Note:"), constraints);
-        constraints.gridx = 1;
-        constraints.weightx = 1;
-        constraints.weighty = 1;
-        constraints.fill = GridBagConstraints.BOTH;
-        JScrollPane noteScroll = new JScrollPane(noteArea);
-        noteScroll.setPreferredSize(new Dimension(340, 90));
-        form.add(noteScroll, constraints);
-
-        int result = JOptionPane.showConfirmDialog(owner, form,
-                "Update Ticket Status - " + ticket.getId(), JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE);
-        if (result != JOptionPane.OK_OPTION) {
-            return;
-        }
-        if (noteArea.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(owner, "Enter a note for the status change.",
-                    "Validation", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        try {
-            helpDesk.updateTicketStatus(ticket.getId(),
-                    (TicketStatus) statusSelection.getSelectedItem(), noteArea.getText());
+        TicketStatusDialog dialog = new TicketStatusDialog(owner, helpDesk, ticket);
+        dialog.setVisible(true);
+        if (dialog.isSaved()) {
             refreshAction.run();
-        } catch (HelpDeskException exception) {
-            GuiUtil.showError(this, exception);
         }
-    }
-
-    private TicketStatus getSuggestedNextStatus(TicketStatus current) {
-        if (current == TicketStatus.OPEN) {
-            return TicketStatus.IN_PROGRESS;
-        }
-        if (current == TicketStatus.IN_PROGRESS) {
-            return TicketStatus.RESOLVED;
-        }
-        if (current == TicketStatus.WAITING_FOR_CUSTOMER) {
-            return TicketStatus.IN_PROGRESS;
-        }
-        if (current == TicketStatus.RESOLVED) {
-            return TicketStatus.CLOSED;
-        }
-        return TicketStatus.CLOSED;
-    }
-
-    private void showSelectedDetails() {
-        Ticket ticket = getSelectedTicket();
-        if (ticket != null) {
-            TextDialog.showText(owner, "Ticket Details - " + ticket.getId(), ticket.getDetails());
-        }
-    }
-
-    private void showSelectedHistory() {
-        Ticket ticket = getSelectedTicket();
-        if (ticket == null) {
-            return;
-        }
-        StringBuilder text = new StringBuilder();
-        text.append(ticket.getId()).append(" - ").append(ticket.getTitle()).append("\n");
-        text.append("Customer: ").append(ticket.getCustomer().getName()).append("\n");
-        text.append("Current agent: ").append(ticket.getResponsibleAgent().getFullName()).append("\n");
-        text.append("Current status: ").append(ticket.getStatus()).append("\n\n");
-        text.append("Status history\n");
-        text.append("--------------\n");
-        for (StatusChange change : ticket.getStatusHistory()) {
-            text.append(change).append("\n");
-        }
-        TextDialog.showText(owner, "Ticket History - " + ticket.getId(), text.toString());
     }
 
     private Ticket getSelectedTicket() {
@@ -329,6 +217,21 @@ public class TicketsPanel extends JPanel {
         } catch (HelpDeskException exception) {
             GuiUtil.showError(this, exception);
             return null;
+        }
+    }
+
+    private void showSelectedDetails() {
+        Ticket ticket = getSelectedTicket();
+        if (ticket != null) {
+            TextDialog.showText(owner, "Ticket Details", ticket.getDetails());
+        }
+    }
+
+    private void showSelectedHistory() {
+        Ticket ticket = getSelectedTicket();
+        if (ticket != null) {
+            TextDialog.showText(owner, "Ticket History",
+                    GuiUtil.formatTicketHistory(ticket));
         }
     }
 

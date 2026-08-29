@@ -29,18 +29,18 @@ public class GuiWorkflowTest {
                 }
             }
         });
-        System.out.println("All " + test.passedChecks + " Swing GUI checks passed.");
+        System.out.println("All " + test.passedChecks + " Swing admin GUI checks passed.");
     }
 
     private void runTests() throws Exception {
         HelpDesk helpDesk = DemoData.createHelpDeskWithSampleData();
         HelpDeskFrame frame = new HelpDeskFrame(helpDesk);
 
-        check("FiberNet HelpDesk".equals(frame.getTitle()), "Window title");
+        check("FiberNet HelpDesk".equals(frame.getTitle()), "Admin window title");
         JMenuBar menuBar = frame.getJMenuBar();
         check(menuBar != null && menuBar.getMenuCount() == 5, "Traditional five-menu bar");
         JTabbedPane tabs = frame.getTabs();
-        check(tabs.getTabCount() == 5, "Five main tabs");
+        check(tabs.getTabCount() == 5, "Five full admin tabs");
 
         DashboardPanel dashboard = (DashboardPanel) tabs.getComponentAt(0);
         CustomersPanel customers = frame.getCustomersPanel();
@@ -64,22 +64,28 @@ public class GuiWorkflowTest {
         tickets.applyFilters();
         check(tickets.getVisibleRowCount() == 1, "Ticket text search");
         tickets.setSearchText("");
-        tickets.setAgentFilterIndex(2);
+        tickets.setAgentFilterIndex(1);
         tickets.applyFilters();
-        check(tickets.getVisibleRowCount() == 2, "Ticket agent filter");
+        check(tickets.getVisibleRowCount() == 1, "Unassigned ticket filter");
+        tickets.setAgentFilterIndex(3);
+        tickets.applyFilters();
+        check(tickets.getVisibleRowCount() == 1, "Assigned-agent filter");
         tickets.setAgentFilterIndex(0);
 
         Customer newCustomer = new ResidentialCustomer("C-GUI-001", "GUI Test Customer",
                 "gui.test@example.com", "+383 44 111 222", "Test Address", "GUI-9001");
         helpDesk.registerCustomer(newCustomer);
         helpDesk.assignProductToCustomer("C-GUI-001", "P-101");
-        helpDesk.createTicket("T-GUI-001", "C-GUI-001", "P-101", "A-01",
+        helpDesk.createTicket("T-GUI-001", "C-GUI-001", "P-101",
                 TicketType.TECHNICAL_PROBLEM, "GUI workflow ticket",
                 "Created while testing table refresh behavior.");
         frame.refreshAll();
         check(customers.getVisibleRowCount() == 5, "Add Customer refreshes table");
-        check(tickets.getVisibleRowCount() == 5, "New Ticket refreshes table");
+        check(tickets.getVisibleRowCount() == 5, "Unassigned New Ticket refreshes table");
+        check(helpDesk.getTicket("T-GUI-001").getResponsibleAgent() == null,
+                "New admin ticket is initially unassigned");
 
+        helpDesk.assignAgentToTicket("T-GUI-001", "A-01");
         helpDesk.assignAgentToTicket("T-GUI-001", "A-03");
         check(helpDesk.getSupportAgent("A-03").getAssignedTickets()
                 .contains(helpDesk.getTicket("T-GUI-001")), "Agent reassignment adds new relation");
@@ -133,29 +139,25 @@ public class GuiWorkflowTest {
         ticketFields.get(1).setText("Dialog-created ticket");
         ticketAreas.get(0).setText("Created through the Swing dialog Save action.");
         findButton(createTicketDialog, "Create Ticket").doClick();
-        check(createTicketDialog.isSaved()
-                && helpDesk.getTicket("T-DIALOG-001") != null,
-                "New Ticket button registers and assigns a ticket");
+        check(createTicketDialog.isSaved() && helpDesk.getTicket("T-DIALOG-001") != null,
+                "New Ticket button registers ticket");
+        check(helpDesk.getTicket("T-DIALOG-001").getResponsibleAgent() == null,
+                "New Ticket dialog does not assign an agent");
 
         CustomerDialog customerCancelDialog = new CustomerDialog(frame, helpDesk, null);
         JButton customerCancel = findButton(customerCancelDialog, "Cancel");
-        check(customerCancel != null, "Customer dialog Cancel button exists");
         customerCancel.doClick();
         check(!customerCancelDialog.isDisplayable(), "Customer dialog Cancel closes safely");
 
         TicketDialog ticketCancelDialog = new TicketDialog(frame, helpDesk);
         JButton ticketCancel = findButton(ticketCancelDialog, "Cancel");
-        check(ticketCancel != null, "Ticket dialog Cancel button exists");
         ticketCancel.doClick();
         check(!ticketCancelDialog.isDisplayable(), "Ticket dialog Cancel closes safely");
 
-        AssignProductDialog productCancelDialog =
-                new AssignProductDialog(frame, helpDesk, newCustomer);
-        JButton productCancel = findButton(productCancelDialog, "Cancel");
-        check(productCancel != null, "Product-assignment Cancel button exists");
-        productCancel.doClick();
-        check(!productCancelDialog.isDisplayable(),
-                "Product-assignment Cancel closes safely");
+        AssignAgentDialog agentCancelDialog = new AssignAgentDialog(frame, helpDesk,
+                helpDesk.getTicket("T-DIALOG-001"));
+        findButton(agentCancelDialog, "Cancel").doClick();
+        check(!agentCancelDialog.isDisplayable(), "Agent-assignment Cancel closes safely");
 
         frame.refreshAll();
         check(customers.getVisibleRowCount() == helpDesk.getCustomerCount(),

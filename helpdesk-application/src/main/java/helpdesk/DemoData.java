@@ -14,6 +14,22 @@ public class DemoData {
         return helpDesk;
     }
 
+    public static AuthenticationService createAuthenticationService()
+            throws HelpDeskException {
+        AuthenticationService authentication = new AuthenticationService();
+        authentication.addAccount(new UserAccount("admin", "admin123",
+                UserRole.ADMIN, null));
+        authentication.addAccount(new UserAccount("agent1", "agent123",
+                UserRole.AGENT, "A-01"));
+        authentication.addAccount(new UserAccount("agent2", "agent123",
+                UserRole.AGENT, "A-02"));
+        authentication.addAccount(new UserAccount("customer1", "customer123",
+                UserRole.CUSTOMER, "C-RES-001"));
+        authentication.addAccount(new UserAccount("business1", "business123",
+                UserRole.CUSTOMER, "C-BIZ-001"));
+        return authentication;
+    }
+
     private static void addProducts(HelpDesk helpDesk) throws HelpDeskException {
         helpDesk.registerProduct(new Product("P-101", "Home Fiber 300",
                 "300 Mbps residential fiber internet", ProductType.INTERNET, 24.99,
@@ -75,23 +91,26 @@ public class DemoData {
     }
 
     private static void addTickets(HelpDesk helpDesk) throws HelpDeskException {
-        helpDesk.createTicket("T-1001", "C-BIZ-001", "P-102", "A-01",
+        helpDesk.createTicket("T-1001", "C-BIZ-001", "P-102",
                 TicketType.TECHNICAL_PROBLEM, "Warehouse connection is unstable",
                 "Packet loss is interrupting the warehouse inventory terminals.");
+        helpDesk.assignAgentToTicket("T-1001", "A-01");
         helpDesk.updateTicketStatus("T-1001", TicketStatus.IN_PROGRESS,
                 "Fiber line diagnostics started.");
 
-        helpDesk.createTicket("T-1002", "C-OFF-001", "P-103", "A-02",
+        helpDesk.createTicket("T-1002", "C-OFF-001", "P-103",
                 TicketType.TECHNICAL_PROBLEM, "Secure portal cannot be reached",
                 "Employees cannot reach the protected municipal records portal.");
+        helpDesk.assignAgentToTicket("T-1002", "A-02");
         helpDesk.updateTicketStatus("T-1002", TicketStatus.IN_PROGRESS,
                 "Security gateway logs are being checked.");
         helpDesk.updateTicketStatus("T-1002", TicketStatus.WAITING_FOR_CUSTOMER,
                 "Waiting for the institution to confirm a test account.");
 
-        helpDesk.createTicket("T-1003", "C-RES-001", "P-104", "A-03",
+        helpDesk.createTicket("T-1003", "C-RES-001", "P-104",
                 TicketType.TECHNICAL_PROBLEM, "Router restarts every evening",
                 "The home router loses power and restarts at approximately 20:00.");
+        helpDesk.assignAgentToTicket("T-1003", "A-03");
         helpDesk.updateTicketStatus("T-1003", TicketStatus.IN_PROGRESS,
                 "A replacement power adapter was delivered.");
         helpDesk.updateTicketStatus("T-1003", TicketStatus.RESOLVED,
@@ -99,7 +118,7 @@ public class DemoData {
         helpDesk.updateTicketStatus("T-1003", TicketStatus.CLOSED,
                 "Customer confirmed stable service for two days.");
 
-        helpDesk.createTicket("T-1004", "C-BIZ-001", "P-105", "A-02",
+        helpDesk.createTicket("T-1004", "C-BIZ-001", "P-105",
                 TicketType.SERVICE_REQUEST, "Add a firewall rule",
                 "Allow the new accounting server to reach the tax reporting service.");
     }

@@ -111,7 +111,7 @@ public class DashboardPanel extends JPanel {
             if (ticket.getStatus() != TicketStatus.CLOSED) {
                 queueModel.addRow(new Object[] {
                     ticket.getId(), ticket.getTitle(), ticket.getPriority(), ticket.getStatus(),
-                    ticket.getResponsibleAgent().getFullName()
+                    ticket.getResponsibleAgentName()
                 });
             }
         }

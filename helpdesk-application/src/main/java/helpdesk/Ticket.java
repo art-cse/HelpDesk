@@ -20,18 +20,18 @@ public class Ticket implements Identifiable {
     private TicketStatus status;
     private final ArrayList<StatusChange> statusHistory;
 
-    public Ticket(String id, Customer customer, Product product, SupportAgent responsibleAgent,
-            TicketType type, String title, String description, TreatmentPriority priority) {
+    public Ticket(String id, Customer customer, Product product, TicketType type,
+            String title, String description, TreatmentPriority priority) {
         this.id = requireText(id, "Ticket ID");
-        if (customer == null || product == null || responsibleAgent == null) {
-            throw new IllegalArgumentException("Customer, product, and responsible agent are required.");
+        if (customer == null || product == null) {
+            throw new IllegalArgumentException("Customer and product are required.");
         }
         if (type == null || priority == null) {
             throw new IllegalArgumentException("Ticket type and priority are required.");
         }
         this.customer = customer;
         this.product = product;
-        this.responsibleAgent = responsibleAgent;
+        responsibleAgent = null;
         this.type = type;
         this.title = requireText(title, "Ticket title");
         this.description = requireText(description, "Ticket description");
@@ -40,7 +40,7 @@ public class Ticket implements Identifiable {
         status = TicketStatus.OPEN;
         statusHistory = new ArrayList<StatusChange>();
         statusHistory.add(new StatusChange(null, TicketStatus.OPEN,
-                "Ticket created and assigned to " + responsibleAgent.getFullName()));
+                "Ticket created and waiting for agent assignment."));
     }
 
     private static String requireText(String value, String fieldName) {
@@ -65,6 +65,14 @@ public class Ticket implements Identifiable {
 
     public SupportAgent getResponsibleAgent() {
         return responsibleAgent;
+    }
+
+    public String getResponsibleAgentName() {
+        return responsibleAgent == null ? "Unassigned" : responsibleAgent.getFullName();
+    }
+
+    public boolean isAssigned() {
+        return responsibleAgent != null;
     }
 
     void reassignAgent(SupportAgent newAgent) {
@@ -110,7 +118,8 @@ public class Ticket implements Identifiable {
             throw new HelpDeskException("The ticket already has status " + status + ".");
         }
         if (!isAllowedTransition(status, newStatus)) {
-            throw new HelpDeskException("Status cannot change from " + status + " to " + newStatus + ".");
+            throw new HelpDeskException("Status cannot change from " + status + " to "
+                    + newStatus + ".");
         }
 
         TicketStatus previousStatus = status;
@@ -140,7 +149,7 @@ public class Ticket implements Identifiable {
     public String getSummary() {
         return id + " | " + priority + " | " + status + " | " + title
                 + " | customer: " + customer.getName()
-                + " | agent: " + responsibleAgent.getFullName();
+                + " | agent: " + getResponsibleAgentName();
     }
 
     public String getDetails() {
