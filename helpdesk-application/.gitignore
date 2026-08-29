@@ -1,0 +1,5 @@
+out/
+package-work/
+visual-review/
+*.class
+.metadata/

@@ -1,0 +1,20 @@
+# Supplied course archive and extracted lecture material are not application source.
+fwd.zip
+course-material/
+
+# Java and IDE build output.
+helpdesk-application/out/
+helpdesk-application/package-work/
+helpdesk-application/visual-review/
+*.class
+.metadata/
+.idea/
+
+# The expanded app-image is generated and contains hundreds of runtime files.
+# Git keeps the equivalent compressed Windows distribution instead.
+helpdesk-application/dist/FiberNet HelpDesk/
+
+# Operating-system and log files.
+Thumbs.db
+.DS_Store
+*.log
