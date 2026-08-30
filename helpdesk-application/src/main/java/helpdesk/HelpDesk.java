@@ -9,6 +9,7 @@ public class HelpDesk {
     private final Registry<Product> products;
     private final Registry<SupportAgent> supportAgents;
     private final Registry<Ticket> tickets;
+    private int nextCustomerNumber;
     private int nextTicketNumber;
 
     public HelpDesk() {
@@ -16,11 +17,44 @@ public class HelpDesk {
         products = new Registry<Product>();
         supportAgents = new Registry<SupportAgent>();
         tickets = new Registry<Ticket>();
+        nextCustomerNumber = 1001;
         nextTicketNumber = 1001;
     }
 
     public void registerCustomer(Customer customer) throws HelpDeskException {
         customers.add(customer);
+    }
+
+    public Customer createCustomer(CustomerCategory category, String name, String email,
+            String phone, String address, String firstCategoryValue,
+            String secondCategoryValue) throws HelpDeskException {
+        String customerId = generateCustomerId();
+        Customer customer;
+
+        if (category == CustomerCategory.BUSINESS) {
+            customer = new BusinessCustomer(customerId, name, email, phone, address,
+                    firstCategoryValue, secondCategoryValue);
+        } else if (category == CustomerCategory.OFFICIAL) {
+            customer = new OfficialCustomer(customerId, name, email, phone, address,
+                    firstCategoryValue, secondCategoryValue);
+        } else if (category == CustomerCategory.RESIDENTIAL) {
+            customer = new ResidentialCustomer(customerId, name, email, phone, address,
+                    firstCategoryValue);
+        } else {
+            throw new IllegalArgumentException("Customer category is required.");
+        }
+
+        registerCustomer(customer);
+        return customer;
+    }
+
+    private String generateCustomerId() {
+        String customerId;
+        do {
+            customerId = String.format("C-%04d", nextCustomerNumber);
+            nextCustomerNumber++;
+        } while (customers.findById(customerId) != null);
+        return customerId;
     }
 
     public void updateCustomer(String customerId, String name, String email, String phone,

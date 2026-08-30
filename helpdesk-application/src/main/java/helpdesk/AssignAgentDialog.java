@@ -101,15 +101,6 @@ public class AssignAgentDialog extends JDialog {
         }
     }
 
-    void setSelectedAgentId(String agentId) {
-        for (int i = 0; i < agents.size(); i++) {
-            if (agents.get(i).getId().equalsIgnoreCase(agentId)) {
-                agentBox.setSelectedIndex(i);
-                return;
-            }
-        }
-    }
-
     public boolean isSaved() {
         return saved;
     }

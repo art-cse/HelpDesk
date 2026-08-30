@@ -95,7 +95,4 @@ public class SupportAgentsPanel extends JPanel {
         }
     }
 
-    int getVisibleRowCount() {
-        return tableModel.getRowCount();
-    }
 }

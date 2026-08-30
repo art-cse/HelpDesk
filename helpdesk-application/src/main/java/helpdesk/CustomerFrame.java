@@ -206,19 +206,7 @@ public class CustomerFrame extends JFrame {
         }
     }
 
-    int getProductRowCount() {
-        return productModel.getRowCount();
-    }
 
-    int getTicketRowCount() {
-        return ticketModel.getRowCount();
-    }
 
-    JTable getTicketTable() {
-        return ticketTable;
-    }
 
-    Customer getCustomer() {
-        return customer;
-    }
 }

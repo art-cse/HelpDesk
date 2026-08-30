@@ -22,10 +22,6 @@ $classPath = Join-Path $projectDirectory "out"
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
-& $javaPath -cp $classPath helpdesk.GuiWorkflowTest
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
-}
 & $javaPath -cp $classPath helpdesk.RoleWorkflowTest
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

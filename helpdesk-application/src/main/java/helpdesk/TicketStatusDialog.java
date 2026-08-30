@@ -123,13 +123,7 @@ public class TicketStatusDialog extends JDialog {
         }
     }
 
-    void setSelectedStatus(TicketStatus status) {
-        statusBox.setSelectedItem(status);
-    }
 
-    void setNote(String note) {
-        noteArea.setText(note);
-    }
 
     public boolean isSaved() {
         return saved;

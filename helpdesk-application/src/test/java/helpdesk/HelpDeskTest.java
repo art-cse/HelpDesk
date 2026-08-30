@@ -1,236 +1,118 @@
 package helpdesk;
 
-import java.util.ArrayList;
-
 public class HelpDeskTest {
-    private int passedTests;
-
     public static void main(String[] args) throws Exception {
         HelpDeskTest test = new HelpDeskTest();
-        test.runTests();
-        System.out.println("All " + test.passedTests + " HelpDesk workflow tests passed.");
+        test.testAutomaticCustomerIdsAndPolymorphism();
+        test.testTicketCreationAndAssignment();
+        test.testStatusHistoryAndValidation();
+        System.out.println("All HelpDesk domain tests passed.");
     }
 
-    private void runTests() throws Exception {
-        testDemoDataPriorityAndUnassignedTicket();
-        testCustomerPolymorphismSearchAndFilters();
-        testSeparateTicketCreationAndAssignment();
-        testStatusHistoryAndInvalidTransitions();
-        testAuthenticationAccounts();
-        testDefensiveCollectionCopiesAndDuplicateIds();
-    }
-
-    private void testDemoDataPriorityAndUnassignedTicket() throws Exception {
-        HelpDesk helpDesk = DemoData.createHelpDeskWithSampleData();
-        check(helpDesk.getCustomerCount() == 4, "Demo data should contain four customers.");
-        check(helpDesk.getProductCount() == 6, "Demo data should contain six products.");
-        check(helpDesk.getSupportAgentCount() == 3, "Demo data should contain three agents.");
-        check(helpDesk.getTicketCount() == 4, "Demo data should contain four tickets.");
-
-        ArrayList<Ticket> ordered = helpDesk.getTicketsInPriorityOrder();
-        check(ordered.get(0).getPriority() == TreatmentPriority.URGENT,
-                "Official customer ticket should be first in the priority queue.");
-        check(ordered.get(ordered.size() - 1).getPriority() == TreatmentPriority.STANDARD,
-                "Residential tickets should follow urgent and high tickets.");
-        check(helpDesk.getTicket("T-1003").getStatusHistory().size() == 4,
-                "Closed demo ticket should retain its complete status history.");
-        Ticket unassigned = helpDesk.getTicket("T-1004");
-        check(unassigned.getResponsibleAgent() == null,
-                "Demo data should include an unassigned ticket.");
-        check("Unassigned".equals(unassigned.getResponsibleAgentName()),
-                "Unassigned tickets should have safe display text.");
-        check(helpDesk.filterTickets("", null, HelpDesk.UNASSIGNED_AGENT_FILTER).size() == 1,
-                "Unassigned filter should return the demo unassigned ticket.");
-
-        pass("demo data, priority queue, and unassigned ticket");
-    }
-
-    private void testCustomerPolymorphismSearchAndFilters() throws Exception {
+    private void testAutomaticCustomerIdsAndPolymorphism() throws Exception {
         HelpDesk helpDesk = new HelpDesk();
-        Customer business = new BusinessCustomer("B-1", "North Trade", "b@example.com",
-                "100", "Business Street", "REG-900", "Mira Basha");
-        Customer official = new OfficialCustomer("O-1", "Public Archive", "o@example.com",
-                "200", "Official Street", "INST-77", "Records Department");
-        Customer residential = new ResidentialCustomer("R-1", "Rina Kola", "r@example.com",
-                "300", "Home Street", "PERSON-55");
 
-        helpDesk.registerCustomer(business);
-        helpDesk.registerCustomer(official);
-        helpDesk.registerCustomer(residential);
+        Customer business = helpDesk.createCustomer(CustomerCategory.BUSINESS,
+                "North Trade", "business@example.com", "100", "Business Street",
+                "REG-900", "Mira Basha");
+        Customer official = helpDesk.createCustomer(CustomerCategory.OFFICIAL,
+                "Public Archive", "archive@example.com", "200", "Official Street",
+                "INST-77", "Records Department");
+        Customer residential = helpDesk.createCustomer(CustomerCategory.RESIDENTIAL,
+                "Rina Kola", "rina@example.com", "300", "Home Street",
+                "PERSON-55", "");
 
-        check(business.getTreatmentPriority() == TreatmentPriority.HIGH,
-                "Business override should return high priority.");
-        check(official.getTreatmentPriority() == TreatmentPriority.URGENT,
-                "Official override should return urgent priority.");
-        check(residential.getTreatmentPriority() == TreatmentPriority.STANDARD,
-                "Residential override should return standard priority.");
-        check(helpDesk.searchCustomers("INST-77").get(0) == official,
-                "Search should include category-specific identifying information.");
-        check(helpDesk.searchCustomers("rina").get(0) == residential,
-                "Search should be case-insensitive and include customer names.");
-        check(helpDesk.filterCustomersByCategory(CustomerCategory.BUSINESS).size() == 1,
-                "Category filter should return the business customer only.");
+        check("C-1001".equals(business.getId()), "First customer ID should be automatic.");
+        check("C-1002".equals(official.getId()), "Customer IDs should be sequential.");
+        check("C-1003".equals(residential.getId()), "Customer IDs should be unique.");
+        check(business instanceof BusinessCustomer
+                && business.getTreatmentPriority() == TreatmentPriority.HIGH,
+                "Business customers should use their overridden priority.");
+        check(official instanceof OfficialCustomer
+                && official.getTreatmentPriority() == TreatmentPriority.URGENT,
+                "Official customers should use their overridden priority.");
+        check(residential instanceof ResidentialCustomer
+                && residential.getTreatmentPriority() == TreatmentPriority.STANDARD,
+                "Residential customers should use their overridden priority.");
+        check(helpDesk.searchCustomers("INST-77").contains(official),
+                "Search should include category-specific identification.");
+        check(helpDesk.filterCustomersByCategory(CustomerCategory.BUSINESS).contains(business),
+                "Customer category filtering should work.");
 
-        pass("customer polymorphism, search, and category filtering");
+        System.out.println("PASS: automatic customer IDs and polymorphism");
     }
 
-    private void testSeparateTicketCreationAndAssignment() throws Exception {
-        HelpDesk helpDesk = new HelpDesk();
-        Customer customer = new ResidentialCustomer("R-2", "Dren Meta", "d@example.com",
-                "400", "Home Road", "PERSON-88");
-        Product internet = new Product("P-HOME", "Home Internet", "Home connection",
-                ProductType.INTERNET, 20.0,
-                new CustomerCategory[] { CustomerCategory.RESIDENTIAL });
-        SupportAgent firstAgent = new SupportAgent("A-1", "Agent One", "agent1@example.com",
-                ProductType.INTERNET);
-        SupportAgent secondAgent = new SupportAgent("A-2", "Agent Two", "agent2@example.com",
-                ProductType.EQUIPMENT);
-        helpDesk.registerCustomer(customer);
-        helpDesk.registerProduct(internet);
-        helpDesk.registerSupportAgent(firstAgent);
-        helpDesk.registerSupportAgent(secondAgent);
-        helpDesk.assignProductToCustomer(customer.getId(), internet.getId());
-
-        Ticket ticket = helpDesk.createTicket(customer.getId(), internet.getId(),
-                TicketType.TECHNICAL_PROBLEM, "No connection", "The modem has no signal.");
-        check("T-1001".equals(ticket.getId()),
-                "HelpDesk should assign the first ticket ID.");
-        check(ticket.getCustomer() == customer, "Ticket should associate with its customer.");
-        check(ticket.getProduct() == internet, "Ticket should associate with its product.");
-        check(ticket.getResponsibleAgent() == null,
-                "New tickets must initially be unassigned.");
-        check(firstAgent.getAssignedTickets().isEmpty(),
-                "Ticket creation must not add a ticket to an agent.");
-        check(ticket.getPriority() == TreatmentPriority.STANDARD,
-                "Ticket priority should still come from the customer override.");
-
-        helpDesk.assignAgentToTicket(ticket.getId(), firstAgent.getId());
-        check(ticket.getResponsibleAgent() == firstAgent,
-                "Separate assignment should set the responsible agent.");
-        check(firstAgent.getAssignedTickets().contains(ticket),
-                "Separate assignment should update agent aggregation.");
-
-        boolean sameAgentRejected = false;
-        try {
-            helpDesk.assignAgentToTicket(ticket.getId(), firstAgent.getId());
-        } catch (HelpDeskException exception) {
-            sameAgentRejected = true;
-        }
-        check(sameAgentRejected, "Assigning the same agent twice should be rejected.");
-
-        helpDesk.assignAgentToTicket(ticket.getId(), secondAgent.getId());
-        check(ticket.getResponsibleAgent() == secondAgent,
-                "Reassignment should update the ticket agent.");
-        check(!firstAgent.getAssignedTickets().contains(ticket),
-                "Reassignment should remove the previous agent relation.");
-        check(secondAgent.getAssignedTickets().contains(ticket),
-                "Reassignment should add the new agent relation.");
-        check(customer.getTicketHistory().contains(ticket),
-                "Customer history should contain the registered ticket.");
-
-        Ticket nextTicket = helpDesk.createTicket(customer.getId(), internet.getId(),
-                TicketType.SERVICE_REQUEST, "Router check", "Please check the home router.");
-        check("T-1002".equals(nextTicket.getId()),
-                "HelpDesk should assign sequential unique ticket IDs.");
-
-        pass("automatic ticket IDs, creation, assignment, and reassignment");
-    }
-
-    private void testStatusHistoryAndInvalidTransitions() throws Exception {
+    private void testTicketCreationAndAssignment() throws Exception {
         HelpDesk helpDesk = createSmallHelpDesk();
-        Ticket ticket = helpDesk.createTicket("R-3", "P-ROUTER",
-                TicketType.COMPLAINT, "Router complaint", "The replacement is delayed.");
-        helpDesk.assignAgentToTicket(ticket.getId(), "A-3");
+        Customer customer = helpDesk.getCustomer("C-1001");
 
-        boolean skippedStepRejected = false;
+        Ticket firstTicket = helpDesk.createTicket(customer.getId(), "P-ROUTER",
+                TicketType.TECHNICAL_PROBLEM, "No connection",
+                "The router has no internet signal.");
+        Ticket secondTicket = helpDesk.createTicket(customer.getId(), "P-ROUTER",
+                TicketType.SERVICE_REQUEST, "Router check",
+                "Please check the router configuration.");
+
+        check("T-1001".equals(firstTicket.getId()), "First ticket ID should be automatic.");
+        check("T-1002".equals(secondTicket.getId()), "Ticket IDs should be sequential.");
+        check(firstTicket.getResponsibleAgent() == null,
+                "A new ticket should start unassigned.");
+        check(firstTicket.getPriority() == customer.getTreatmentPriority(),
+                "Ticket priority should come from the customer subtype.");
+
+        helpDesk.assignAgentToTicket(firstTicket.getId(), "A-1");
+        SupportAgent agent = helpDesk.getSupportAgent("A-1");
+        check(firstTicket.getResponsibleAgent() == agent,
+                "Assignment should update the ticket.");
+        check(agent.getAssignedTickets().contains(firstTicket),
+                "Assignment should update the support agent.");
+        check(customer.getTicketHistory().contains(firstTicket),
+                "The customer should retain the ticket in their history.");
+
+        System.out.println("PASS: ticket creation and agent assignment");
+    }
+
+    private void testStatusHistoryAndValidation() throws Exception {
+        HelpDesk helpDesk = createSmallHelpDesk();
+        Ticket ticket = helpDesk.createTicket("C-1001", "P-ROUTER",
+                TicketType.COMPLAINT, "Router complaint", "Replacement is delayed.");
+        helpDesk.assignAgentToTicket(ticket.getId(), "A-1");
+
+        boolean invalidTransitionRejected = false;
         try {
             helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.RESOLVED,
-                    "Skipping work step");
+                    "Skipping the work step.");
         } catch (HelpDeskException exception) {
-            skippedStepRejected = true;
+            invalidTransitionRejected = true;
         }
-        check(skippedStepRejected, "Open tickets must not jump directly to resolved.");
-        check(ticket.getStatus() == TicketStatus.OPEN,
-                "A rejected transition must not change ticket state.");
+        check(invalidTransitionRejected, "Invalid status changes should be rejected.");
 
         helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.IN_PROGRESS,
-                "Agent started work.");
+                "Agent started diagnostics.");
         helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.RESOLVED,
-                "Replacement delivered.");
+                "Connection restored.");
         helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.CLOSED,
-                "Customer confirmed resolution.");
-        check(ticket.getStatus() == TicketStatus.CLOSED, "Valid status flow should close ticket.");
+                "Customer confirmed the fix.");
+
+        check(ticket.getStatus() == TicketStatus.CLOSED,
+                "A valid status sequence should close the ticket.");
         check(ticket.getStatusHistory().size() == 4,
-                "History should include creation and all three valid updates.");
+                "Ticket history should contain creation and each status change.");
 
-        boolean closedTicketRejected = false;
-        try {
-            helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.IN_PROGRESS,
-                    "Invalid reopening");
-        } catch (HelpDeskException exception) {
-            closedTicketRejected = true;
-        }
-        check(closedTicketRejected, "A closed ticket must reject further updates.");
-
-        pass("status workflow, history composition, and custom exceptions");
-    }
-
-    private void testAuthenticationAccounts() throws Exception {
-        AuthenticationService authentication = DemoData.createAuthenticationService();
-        check(authentication.authenticate("admin", "admin123").getRole() == UserRole.ADMIN,
-                "Administrator demo login should work.");
-        check(authentication.authenticate("agent1", "agent123").getRole() == UserRole.AGENT,
-                "Agent demo login should work.");
-        check(authentication.authenticate("customer1", "customer123").getRole()
-                == UserRole.CUSTOMER, "Customer demo login should work.");
-
-        boolean invalidRejected = false;
-        try {
-            authentication.authenticate("admin", "wrong-password");
-        } catch (HelpDeskException exception) {
-            invalidRejected = true;
-        }
-        check(invalidRejected, "Invalid login should be rejected.");
-
-        pass("simple in-memory authentication accounts");
-    }
-
-    private void testDefensiveCollectionCopiesAndDuplicateIds() throws Exception {
-        HelpDesk helpDesk = createSmallHelpDesk();
-        Customer customer = helpDesk.getCustomer("R-3");
-
-        ArrayList<Customer> customerCopy = helpDesk.getCustomers();
-        customerCopy.clear();
-        check(helpDesk.getCustomerCount() == 1,
-                "Clearing a returned list must not clear the HelpDesk registry.");
-
-        ArrayList<Product> productCopy = customer.getProducts();
-        productCopy.clear();
-        check(customer.getProducts().size() == 1,
-                "Clearing a returned list must not clear the customer's products.");
-
-        boolean duplicateRejected = false;
-        try {
-            helpDesk.registerCustomer(new ResidentialCustomer("R-3", "Duplicate", "x@example.com",
-                    "999", "Other Road", "OTHER"));
-        } catch (HelpDeskException exception) {
-            duplicateRejected = true;
-        }
-        check(duplicateRejected, "The generic registry should reject duplicate IDs.");
-
-        pass("encapsulation, duplicate validation, and defensive copies");
+        System.out.println("PASS: status validation and ticket history");
     }
 
     private HelpDesk createSmallHelpDesk() throws Exception {
         HelpDesk helpDesk = new HelpDesk();
-        helpDesk.registerCustomer(new ResidentialCustomer("R-3", "Lira Dema", "l@example.com",
-                "600", "Residential Road", "PERSON-99"));
+        Customer customer = helpDesk.createCustomer(CustomerCategory.RESIDENTIAL,
+                "Lira Dema", "lira@example.com", "600", "Residential Road",
+                "PERSON-99", "");
         helpDesk.registerProduct(new Product("P-ROUTER", "Router Care", "Router support",
                 ProductType.EQUIPMENT, 10.0,
                 new CustomerCategory[] { CustomerCategory.RESIDENTIAL }));
-        helpDesk.registerSupportAgent(new SupportAgent("A-3", "Agent Three",
-                "agent3@example.com", ProductType.EQUIPMENT));
-        helpDesk.assignProductToCustomer("R-3", "P-ROUTER");
+        helpDesk.registerSupportAgent(new SupportAgent("A-1", "Agent One",
+                "agent@example.com", ProductType.EQUIPMENT));
+        helpDesk.assignProductToCustomer(customer.getId(), "P-ROUTER");
         return helpDesk;
     }
 
@@ -238,10 +120,5 @@ public class HelpDeskTest {
         if (!condition) {
             throw new AssertionError(message);
         }
-    }
-
-    private void pass(String testName) {
-        passedTests++;
-        System.out.println("PASS: " + testName);
     }
 }

@@ -22,7 +22,6 @@ public class CustomerDialog extends JDialog {
 
     private final HelpDesk helpDesk;
     private final Customer existingCustomer;
-    private final JTextField idField;
     private final JTextField nameField;
     private final JTextField emailField;
     private final JTextField phoneField;
@@ -51,7 +50,6 @@ public class CustomerDialog extends JDialog {
         constraints.anchor = GridBagConstraints.WEST;
         constraints.fill = GridBagConstraints.HORIZONTAL;
 
-        idField = new JTextField(24);
         nameField = new JTextField(24);
         emailField = new JTextField(24);
         phoneField = new JTextField(24);
@@ -62,8 +60,10 @@ public class CustomerDialog extends JDialog {
         categoryLabel1 = new JLabel();
         categoryLabel2 = new JLabel();
 
+        String displayedId = existingCustomer == null
+                ? "Assigned automatically" : existingCustomer.getId();
         int row = 0;
-        addField(form, constraints, row++, "Customer ID:", idField);
+        addField(form, constraints, row++, "Customer ID:", new JLabel(displayedId));
         addField(form, constraints, row++, "Name:", nameField);
         addField(form, constraints, row++, "Email:", emailField);
         addField(form, constraints, row++, "Phone:", phoneField);
@@ -100,10 +100,10 @@ public class CustomerDialog extends JDialog {
         buttonPanel.add(cancelButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        if (existingCustomer != null) {
-            loadCustomer(existingCustomer);
-        } else {
+        if (existingCustomer == null) {
             updateCategoryFields();
+        } else {
+            loadCustomer(existingCustomer);
         }
 
         pack();
@@ -128,8 +128,6 @@ public class CustomerDialog extends JDialog {
     }
 
     private void loadCustomer(Customer customer) {
-        idField.setText(customer.getId());
-        idField.setEnabled(false);
         nameField.setText(customer.getName());
         emailField.setText(customer.getEmail());
         phoneField.setText(customer.getPhone());
@@ -137,9 +135,20 @@ public class CustomerDialog extends JDialog {
         categoryBox.setSelectedItem(customer.getCategory());
         categoryBox.setEnabled(false);
         updateCategoryFields();
-        categoryField1.setText(customer.getCategorySpecificInformation());
+
+        if (customer instanceof BusinessCustomer) {
+            BusinessCustomer business = (BusinessCustomer) customer;
+            categoryField1.setText(business.getCompanyRegistrationNumber());
+            categoryField2.setText(business.getContactPerson());
+        } else if (customer instanceof OfficialCustomer) {
+            OfficialCustomer official = (OfficialCustomer) customer;
+            categoryField1.setText(official.getInstitutionCode());
+            categoryField2.setText(official.getDepartment());
+        } else {
+            ResidentialCustomer residential = (ResidentialCustomer) customer;
+            categoryField1.setText(residential.getPersonalNumber());
+        }
         categoryField1.setEnabled(false);
-        categoryField2.setText("Category and identifying data cannot be changed here.");
         categoryField2.setEnabled(false);
     }
 
@@ -164,8 +173,10 @@ public class CustomerDialog extends JDialog {
     private void saveCustomer() {
         try {
             if (existingCustomer == null) {
-                Customer customer = createCustomer();
-                helpDesk.registerCustomer(customer);
+                helpDesk.createCustomer((CustomerCategory) categoryBox.getSelectedItem(),
+                        nameField.getText(), emailField.getText(), phoneField.getText(),
+                        addressField.getText(), categoryField1.getText(),
+                        categoryField2.getText());
             } else {
                 existingCustomer.updateDetails(nameField.getText(), emailField.getText(),
                         phoneField.getText(), addressField.getText());
@@ -175,22 +186,6 @@ public class CustomerDialog extends JDialog {
         } catch (HelpDeskException | IllegalArgumentException exception) {
             GuiUtil.showError(this, exception);
         }
-    }
-
-    private Customer createCustomer() {
-        CustomerCategory category = (CustomerCategory) categoryBox.getSelectedItem();
-        if (category == CustomerCategory.BUSINESS) {
-            return new BusinessCustomer(idField.getText(), nameField.getText(), emailField.getText(),
-                    phoneField.getText(), addressField.getText(), categoryField1.getText(),
-                    categoryField2.getText());
-        }
-        if (category == CustomerCategory.OFFICIAL) {
-            return new OfficialCustomer(idField.getText(), nameField.getText(), emailField.getText(),
-                    phoneField.getText(), addressField.getText(), categoryField1.getText(),
-                    categoryField2.getText());
-        }
-        return new ResidentialCustomer(idField.getText(), nameField.getText(), emailField.getText(),
-                phoneField.getText(), addressField.getText(), categoryField1.getText());
     }
 
     public boolean isSaved() {

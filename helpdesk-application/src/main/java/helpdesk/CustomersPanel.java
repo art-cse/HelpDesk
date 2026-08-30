@@ -238,15 +238,6 @@ public class CustomersPanel extends JPanel {
         }
     }
 
-    int getVisibleRowCount() {
-        return tableModel.getRowCount();
-    }
 
-    JTable getCustomerTable() {
-        return customerTable;
-    }
 
-    void setSearchText(String text) {
-        searchField.setText(text);
-    }
 }

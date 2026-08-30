@@ -164,15 +164,6 @@ public class AgentFrame extends JFrame {
         }
     }
 
-    int getVisibleRowCount() {
-        return tableModel.getRowCount();
-    }
 
-    JTable getTicketTable() {
-        return ticketTable;
-    }
 
-    SupportAgent getAgent() {
-        return agent;
-    }
 }

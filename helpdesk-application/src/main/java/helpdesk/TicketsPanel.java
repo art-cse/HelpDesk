@@ -235,19 +235,7 @@ public class TicketsPanel extends JPanel {
         }
     }
 
-    int getVisibleRowCount() {
-        return tableModel.getRowCount();
-    }
 
-    JTable getTicketTable() {
-        return ticketTable;
-    }
 
-    void setSearchText(String text) {
-        searchField.setText(text);
-    }
 
-    void setAgentFilterIndex(int index) {
-        agentBox.setSelectedIndex(index);
-    }
 }

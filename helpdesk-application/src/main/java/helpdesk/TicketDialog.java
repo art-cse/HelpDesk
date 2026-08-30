@@ -34,7 +34,6 @@ public class TicketDialog extends JDialog {
     private final JTextField subjectField;
     private final JTextArea descriptionArea;
     private final JLabel priorityValue;
-    private Ticket createdTicket;
     private boolean saved;
 
     public TicketDialog(HelpDeskFrame owner, HelpDesk helpDesk) {
@@ -180,7 +179,7 @@ public class TicketDialog extends JDialog {
         try {
             Customer customer = customers.get(customerBox.getSelectedIndex());
             Product product = products.get(productBox.getSelectedIndex());
-            createdTicket = helpDesk.createTicket(customer.getId(), product.getId(),
+            helpDesk.createTicket(customer.getId(), product.getId(),
                     (TicketType) typeBox.getSelectedItem(), subjectField.getText(),
                     descriptionArea.getText());
             saved = true;
@@ -188,10 +187,6 @@ public class TicketDialog extends JDialog {
         } catch (HelpDeskException | IllegalArgumentException exception) {
             GuiUtil.showError(this, exception);
         }
-    }
-
-    public Ticket getCreatedTicket() {
-        return createdTicket;
     }
 
     public boolean isSaved() {

@@ -129,11 +129,5 @@ public class LoginFrame extends JFrame {
         return roleFrame;
     }
 
-    JTextField getUsernameField() {
-        return usernameField;
-    }
 
-    JPasswordField getPasswordField() {
-        return passwordField;
-    }
 }

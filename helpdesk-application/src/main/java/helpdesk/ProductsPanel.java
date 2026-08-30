@@ -78,7 +78,4 @@ public class ProductsPanel extends JPanel {
         }
     }
 
-    int getVisibleRowCount() {
-        return tableModel.getRowCount();
-    }
 }

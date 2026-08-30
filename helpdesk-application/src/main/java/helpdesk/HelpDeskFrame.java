@@ -219,19 +219,7 @@ public class HelpDeskFrame extends JFrame {
         }
     }
 
-    HelpDesk getHelpDesk() {
-        return helpDesk;
-    }
 
-    JTabbedPane getTabs() {
-        return tabs;
-    }
 
-    CustomersPanel getCustomersPanel() {
-        return customersPanel;
-    }
 
-    TicketsPanel getTicketsPanel() {
-        return ticketsPanel;
-    }
 }

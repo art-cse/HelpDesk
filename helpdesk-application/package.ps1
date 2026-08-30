@@ -76,8 +76,6 @@ $windowsArchive = Join-Path $actualDistDirectory "FiberNet-HelpDesk-Windows.zip"
 Compress-Archive -LiteralPath $windowsAppDirectory -DestinationPath $windowsArchive `
     -CompressionLevel Optimal -Force
 
-Copy-Item -LiteralPath (Join-Path $projectDirectory "README.md") `
-    -Destination (Join-Path $actualDistDirectory "PROJECT-README.md")
 Write-Output "Packaging complete."
 Write-Output "Runnable JAR: $actualDistDirectory\FiberNetHelpDesk.jar"
 Write-Output "Windows archive: $windowsArchive"

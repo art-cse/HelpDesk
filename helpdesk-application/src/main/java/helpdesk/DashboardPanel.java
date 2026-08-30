@@ -117,7 +117,4 @@ public class DashboardPanel extends JPanel {
         }
     }
 
-    int getQueueRowCount() {
-        return queueModel.getRowCount();
-    }
 }
