@@ -76,24 +76,26 @@ public class GuiWorkflowTest {
                 "gui.test@example.com", "+383 44 111 222", "Test Address", "GUI-9001");
         helpDesk.registerCustomer(newCustomer);
         helpDesk.assignProductToCustomer("C-GUI-001", "P-101");
-        helpDesk.createTicket("T-GUI-001", "C-GUI-001", "P-101",
+        Ticket guiTicket = helpDesk.createTicket("C-GUI-001", "P-101",
                 TicketType.TECHNICAL_PROBLEM, "GUI workflow ticket",
                 "Created while testing table refresh behavior.");
+        String guiTicketId = guiTicket.getId();
         frame.refreshAll();
         check(customers.getVisibleRowCount() == 5, "Add Customer refreshes table");
         check(tickets.getVisibleRowCount() == 5, "Unassigned New Ticket refreshes table");
-        check(helpDesk.getTicket("T-GUI-001").getResponsibleAgent() == null,
+        check("T-1005".equals(guiTicketId), "New admin ticket receives the next system ID");
+        check(guiTicket.getResponsibleAgent() == null,
                 "New admin ticket is initially unassigned");
 
-        helpDesk.assignAgentToTicket("T-GUI-001", "A-01");
-        helpDesk.assignAgentToTicket("T-GUI-001", "A-03");
-        check(helpDesk.getSupportAgent("A-03").getAssignedTickets()
-                .contains(helpDesk.getTicket("T-GUI-001")), "Agent reassignment adds new relation");
-        check(!helpDesk.getSupportAgent("A-01").getAssignedTickets()
-                .contains(helpDesk.getTicket("T-GUI-001")), "Agent reassignment removes old relation");
-        helpDesk.updateTicketStatus("T-GUI-001", TicketStatus.IN_PROGRESS,
+        helpDesk.assignAgentToTicket(guiTicketId, "A-01");
+        helpDesk.assignAgentToTicket(guiTicketId, "A-03");
+        check(helpDesk.getSupportAgent("A-03").getAssignedTickets().contains(guiTicket),
+                "Agent reassignment adds new relation");
+        check(!helpDesk.getSupportAgent("A-01").getAssignedTickets().contains(guiTicket),
+                "Agent reassignment removes old relation");
+        helpDesk.updateTicketStatus(guiTicketId, TicketStatus.IN_PROGRESS,
                 "GUI status update test.");
-        check(helpDesk.getTicket("T-GUI-001").getStatus() == TicketStatus.IN_PROGRESS,
+        check(guiTicket.getStatus() == TicketStatus.IN_PROGRESS,
                 "Status update and history workflow");
 
         helpDesk.updateCustomer("C-GUI-001", "Updated GUI Customer", "updated@example.com",
@@ -135,13 +137,16 @@ public class GuiWorkflowTest {
         customerBox.setSelectedIndex(helpDesk.getCustomerCount() - 1);
         ArrayList<JTextField> ticketFields = findComponents(createTicketDialog, JTextField.class);
         ArrayList<JTextArea> ticketAreas = findComponents(createTicketDialog, JTextArea.class);
-        ticketFields.get(0).setText("T-DIALOG-001");
-        ticketFields.get(1).setText("Dialog-created ticket");
+        check(ticketFields.size() == 1, "New Ticket form has no editable Ticket ID field");
+        ticketFields.get(0).setText("Dialog-created ticket");
         ticketAreas.get(0).setText("Created through the Swing dialog Save action.");
         findButton(createTicketDialog, "Create Ticket").doClick();
-        check(createTicketDialog.isSaved() && helpDesk.getTicket("T-DIALOG-001") != null,
+        Ticket dialogTicket = createTicketDialog.getCreatedTicket();
+        check(createTicketDialog.isSaved() && dialogTicket != null,
                 "New Ticket button registers ticket");
-        check(helpDesk.getTicket("T-DIALOG-001").getResponsibleAgent() == null,
+        check("T-1006".equals(dialogTicket.getId()),
+                "New Ticket dialog receives a system-generated ID");
+        check(dialogTicket.getResponsibleAgent() == null,
                 "New Ticket dialog does not assign an agent");
 
         CustomerDialog customerCancelDialog = new CustomerDialog(frame, helpDesk, null);
@@ -154,8 +159,7 @@ public class GuiWorkflowTest {
         ticketCancel.doClick();
         check(!ticketCancelDialog.isDisplayable(), "Ticket dialog Cancel closes safely");
 
-        AssignAgentDialog agentCancelDialog = new AssignAgentDialog(frame, helpDesk,
-                helpDesk.getTicket("T-DIALOG-001"));
+        AssignAgentDialog agentCancelDialog = new AssignAgentDialog(frame, helpDesk, dialogTicket);
         findButton(agentCancelDialog, "Cancel").doClick();
         check(!agentCancelDialog.isDisplayable(), "Agent-assignment Cancel closes safely");
 

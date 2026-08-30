@@ -9,6 +9,7 @@ FiberNet HelpDesk is a Java 17 Object-Oriented Programming university project fo
 - Customer, product, support-agent, and ticket tables
 - Customer search and filtering
 - Ticket status and history tracking
+- System-generated sequential ticket IDs; users never enter them manually
 - Separate ticket registration and support-agent assignment
 - Unassigned tickets with safe `Unassigned` display text
 - Administrator, support-agent, and customer access views
@@ -21,7 +22,7 @@ The normal workflow is:
 
 ```text
 Customer reports a problem
-        -> ticket is Open and Unassigned
+        -> system assigns a ticket ID; ticket is Open and Unassigned
 Administrator assigns a support agent
         -> agent sees it in My Tickets
 Agent updates or resolves the ticket
@@ -52,7 +53,7 @@ Sees only tickets assigned to the linked agent. The agent can view details/histo
 
 ### Customer
 
-Sees only the linked customer's account, products, tickets, current status, and history. The customer can submit a new ticket for one of their own products. It starts `OPEN` and `Unassigned`.
+Sees only the linked customer's account, products, tickets, current status, and history. The customer can submit a new ticket for one of their own products. The system assigns its ID, and it starts `OPEN` and `Unassigned`.
 
 ## OOP concepts demonstrated
 
@@ -137,7 +138,7 @@ Run all domain, admin GUI, and role workflow checks:
 powershell -ExecutionPolicy Bypass -File .\test.ps1
 ```
 
-The current suites contain 6 domain workflow groups, 30 admin GUI checks, and 42 role workflow checks.
+The current suites contain 6 domain workflow groups, 33 admin GUI checks, and 44 role workflow checks.
 
 Rebuild the runnable JAR, Windows app image, and compressed Windows distribution:
 
@@ -146,4 +147,3 @@ powershell -ExecutionPolicy Bypass -File .\package.ps1
 ```
 
 Final distributable files are written to `dist/`.
-

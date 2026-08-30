@@ -9,12 +9,14 @@ public class HelpDesk {
     private final Registry<Product> products;
     private final Registry<SupportAgent> supportAgents;
     private final Registry<Ticket> tickets;
+    private int nextTicketNumber;
 
     public HelpDesk() {
         customers = new Registry<Customer>();
         products = new Registry<Product>();
         supportAgents = new Registry<SupportAgent>();
         tickets = new Registry<Ticket>();
+        nextTicketNumber = 1001;
     }
 
     public void registerCustomer(Customer customer) throws HelpDeskException {
@@ -49,8 +51,8 @@ public class HelpDesk {
         customer.addProduct(product);
     }
 
-    public Ticket createTicket(String ticketId, String customerId, String productId,
-            TicketType type, String title, String description) throws HelpDeskException {
+    public Ticket createTicket(String customerId, String productId, TicketType type,
+            String title, String description) throws HelpDeskException {
         Customer customer = getCustomer(customerId);
         Product product = getProduct(productId);
 
@@ -59,12 +61,22 @@ public class HelpDesk {
                     "The selected product is not associated with this customer.");
         }
 
+        String ticketId = generateTicketId();
         TreatmentPriority priority = customer.getTreatmentPriority();
         Ticket ticket = new Ticket(ticketId, customer, product, type, title,
                 description, priority);
         tickets.add(ticket);
         customer.addTicketToHistory(ticket);
         return ticket;
+    }
+
+    private String generateTicketId() {
+        String ticketId;
+        do {
+            ticketId = String.format("T-%04d", nextTicketNumber);
+            nextTicketNumber++;
+        } while (tickets.findById(ticketId) != null);
+        return ticketId;
     }
 
     public void assignAgentToTicket(String ticketId, String agentId) throws HelpDeskException {

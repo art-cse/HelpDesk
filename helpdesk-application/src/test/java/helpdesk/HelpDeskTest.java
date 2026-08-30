@@ -91,8 +91,10 @@ public class HelpDeskTest {
         helpDesk.registerSupportAgent(secondAgent);
         helpDesk.assignProductToCustomer(customer.getId(), internet.getId());
 
-        Ticket ticket = helpDesk.createTicket("T-1", customer.getId(), internet.getId(),
+        Ticket ticket = helpDesk.createTicket(customer.getId(), internet.getId(),
                 TicketType.TECHNICAL_PROBLEM, "No connection", "The modem has no signal.");
+        check("T-1001".equals(ticket.getId()),
+                "HelpDesk should assign the first ticket ID.");
         check(ticket.getCustomer() == customer, "Ticket should associate with its customer.");
         check(ticket.getProduct() == internet, "Ticket should associate with its product.");
         check(ticket.getResponsibleAgent() == null,
@@ -126,18 +128,24 @@ public class HelpDeskTest {
         check(customer.getTicketHistory().contains(ticket),
                 "Customer history should contain the registered ticket.");
 
-        pass("separate ticket creation, assignment, and reassignment");
+        Ticket nextTicket = helpDesk.createTicket(customer.getId(), internet.getId(),
+                TicketType.SERVICE_REQUEST, "Router check", "Please check the home router.");
+        check("T-1002".equals(nextTicket.getId()),
+                "HelpDesk should assign sequential unique ticket IDs.");
+
+        pass("automatic ticket IDs, creation, assignment, and reassignment");
     }
 
     private void testStatusHistoryAndInvalidTransitions() throws Exception {
         HelpDesk helpDesk = createSmallHelpDesk();
-        Ticket ticket = helpDesk.createTicket("T-2", "R-3", "P-ROUTER",
+        Ticket ticket = helpDesk.createTicket("R-3", "P-ROUTER",
                 TicketType.COMPLAINT, "Router complaint", "The replacement is delayed.");
-        helpDesk.assignAgentToTicket("T-2", "A-3");
+        helpDesk.assignAgentToTicket(ticket.getId(), "A-3");
 
         boolean skippedStepRejected = false;
         try {
-            helpDesk.updateTicketStatus("T-2", TicketStatus.RESOLVED, "Skipping work step");
+            helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.RESOLVED,
+                    "Skipping work step");
         } catch (HelpDeskException exception) {
             skippedStepRejected = true;
         }
@@ -145,9 +153,11 @@ public class HelpDeskTest {
         check(ticket.getStatus() == TicketStatus.OPEN,
                 "A rejected transition must not change ticket state.");
 
-        helpDesk.updateTicketStatus("T-2", TicketStatus.IN_PROGRESS, "Agent started work.");
-        helpDesk.updateTicketStatus("T-2", TicketStatus.RESOLVED, "Replacement delivered.");
-        helpDesk.updateTicketStatus("T-2", TicketStatus.CLOSED,
+        helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.IN_PROGRESS,
+                "Agent started work.");
+        helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.RESOLVED,
+                "Replacement delivered.");
+        helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.CLOSED,
                 "Customer confirmed resolution.");
         check(ticket.getStatus() == TicketStatus.CLOSED, "Valid status flow should close ticket.");
         check(ticket.getStatusHistory().size() == 4,
@@ -155,7 +165,8 @@ public class HelpDeskTest {
 
         boolean closedTicketRejected = false;
         try {
-            helpDesk.updateTicketStatus("T-2", TicketStatus.IN_PROGRESS, "Invalid reopening");
+            helpDesk.updateTicketStatus(ticket.getId(), TicketStatus.IN_PROGRESS,
+                    "Invalid reopening");
         } catch (HelpDeskException exception) {
             closedTicketRejected = true;
         }

@@ -28,13 +28,13 @@ public class TicketDialog extends JDialog {
     private final HelpDesk helpDesk;
     private final ArrayList<Customer> customers;
     private final ArrayList<Product> products;
-    private final JTextField idField;
     private final JComboBox<String> customerBox;
     private final JComboBox<String> productBox;
     private final JComboBox<TicketType> typeBox;
     private final JTextField subjectField;
     private final JTextArea descriptionArea;
     private final JLabel priorityValue;
+    private Ticket createdTicket;
     private boolean saved;
 
     public TicketDialog(HelpDeskFrame owner, HelpDesk helpDesk) {
@@ -58,7 +58,6 @@ public class TicketDialog extends JDialog {
         setResizable(false);
         setLayout(new BorderLayout(8, 8));
 
-        idField = new JTextField(25);
         customerBox = new JComboBox<String>();
         for (Customer customer : customers) {
             customerBox.addItem(customer.getId() + " - " + customer.getName());
@@ -84,7 +83,7 @@ public class TicketDialog extends JDialog {
         constraints.weightx = 1;
 
         int row = 0;
-        addField(form, constraints, row++, "Ticket ID:", idField);
+        addField(form, constraints, row++, "Ticket ID:", new JLabel("Assigned automatically"));
         addField(form, constraints, row++, "Customer:", customerBox);
         addField(form, constraints, row++, "Product / Service:", productBox);
         addField(form, constraints, row++, "Ticket Type:", typeBox);
@@ -181,7 +180,7 @@ public class TicketDialog extends JDialog {
         try {
             Customer customer = customers.get(customerBox.getSelectedIndex());
             Product product = products.get(productBox.getSelectedIndex());
-            helpDesk.createTicket(idField.getText(), customer.getId(), product.getId(),
+            createdTicket = helpDesk.createTicket(customer.getId(), product.getId(),
                     (TicketType) typeBox.getSelectedItem(), subjectField.getText(),
                     descriptionArea.getText());
             saved = true;
@@ -189,6 +188,10 @@ public class TicketDialog extends JDialog {
         } catch (HelpDeskException | IllegalArgumentException exception) {
             GuiUtil.showError(this, exception);
         }
+    }
+
+    public Ticket getCreatedTicket() {
+        return createdTicket;
     }
 
     public boolean isSaved() {

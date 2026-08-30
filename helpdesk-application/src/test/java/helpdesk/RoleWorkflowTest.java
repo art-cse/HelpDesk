@@ -98,13 +98,16 @@ public class RoleWorkflowTest {
                 findComponents(customerTicketDialog, JTextField.class);
         ArrayList<JTextArea> ticketAreas =
                 findComponents(customerTicketDialog, JTextArea.class);
-        ticketFields.get(0).setText("T-ROLE-001");
-        ticketFields.get(1).setText("Customer internet offline");
+        check(ticketFields.size() == 1,
+                "Customer ticket form has no editable Ticket ID field");
+        ticketFields.get(0).setText("Customer internet offline");
         ticketAreas.get(0).setText("The fiber connection stopped working this morning.");
         findButton(customerTicketDialog, "Submit Ticket").doClick();
         check(customerTicketDialog.isSaved(), "Customer Submit Ticket button works");
 
-        Ticket ticket = helpDesk.getTicket("T-ROLE-001");
+        Ticket ticket = customerTicketDialog.getCreatedTicket();
+        check(ticket != null && "T-1005".equals(ticket.getId()),
+                "Customer-created ticket receives the next system ID");
         check(ticket.getCustomer() == customer, "Customer-created ticket belongs to that customer");
         check(ticket.getStatus() == TicketStatus.OPEN, "Customer-created ticket starts Open");
         check(ticket.getResponsibleAgent() == null,

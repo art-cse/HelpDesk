@@ -125,13 +125,12 @@ public class ConsoleApp {
             System.out.println(product);
         }
         String productId = readRequired("Affected product ID: ");
-        String ticketId = readRequired("Ticket ID: ");
         TicketType type = chooseTicketType();
         String title = readRequired("Short title: ");
         String description = readRequired("Description: ");
-        Ticket ticket = helpDesk.createTicket(ticketId, customerId, productId,
-                type, title, description);
-        System.out.println("Registered: " + ticket.getSummary());
+        Ticket ticket = helpDesk.createTicket(customerId, productId, type, title, description);
+        System.out.println("Registered with system ID " + ticket.getId() + ":");
+        System.out.println(ticket.getSummary());
     }
 
     private void assignAgent() throws HelpDeskException {

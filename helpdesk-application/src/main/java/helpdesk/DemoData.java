@@ -91,35 +91,35 @@ public class DemoData {
     }
 
     private static void addTickets(HelpDesk helpDesk) throws HelpDeskException {
-        helpDesk.createTicket("T-1001", "C-BIZ-001", "P-102",
+        Ticket businessTicket = helpDesk.createTicket("C-BIZ-001", "P-102",
                 TicketType.TECHNICAL_PROBLEM, "Warehouse connection is unstable",
                 "Packet loss is interrupting the warehouse inventory terminals.");
-        helpDesk.assignAgentToTicket("T-1001", "A-01");
-        helpDesk.updateTicketStatus("T-1001", TicketStatus.IN_PROGRESS,
+        helpDesk.assignAgentToTicket(businessTicket.getId(), "A-01");
+        helpDesk.updateTicketStatus(businessTicket.getId(), TicketStatus.IN_PROGRESS,
                 "Fiber line diagnostics started.");
 
-        helpDesk.createTicket("T-1002", "C-OFF-001", "P-103",
+        Ticket officialTicket = helpDesk.createTicket("C-OFF-001", "P-103",
                 TicketType.TECHNICAL_PROBLEM, "Secure portal cannot be reached",
                 "Employees cannot reach the protected municipal records portal.");
-        helpDesk.assignAgentToTicket("T-1002", "A-02");
-        helpDesk.updateTicketStatus("T-1002", TicketStatus.IN_PROGRESS,
+        helpDesk.assignAgentToTicket(officialTicket.getId(), "A-02");
+        helpDesk.updateTicketStatus(officialTicket.getId(), TicketStatus.IN_PROGRESS,
                 "Security gateway logs are being checked.");
-        helpDesk.updateTicketStatus("T-1002", TicketStatus.WAITING_FOR_CUSTOMER,
+        helpDesk.updateTicketStatus(officialTicket.getId(), TicketStatus.WAITING_FOR_CUSTOMER,
                 "Waiting for the institution to confirm a test account.");
 
-        helpDesk.createTicket("T-1003", "C-RES-001", "P-104",
+        Ticket residentialTicket = helpDesk.createTicket("C-RES-001", "P-104",
                 TicketType.TECHNICAL_PROBLEM, "Router restarts every evening",
                 "The home router loses power and restarts at approximately 20:00.");
-        helpDesk.assignAgentToTicket("T-1003", "A-03");
-        helpDesk.updateTicketStatus("T-1003", TicketStatus.IN_PROGRESS,
+        helpDesk.assignAgentToTicket(residentialTicket.getId(), "A-03");
+        helpDesk.updateTicketStatus(residentialTicket.getId(), TicketStatus.IN_PROGRESS,
                 "A replacement power adapter was delivered.");
-        helpDesk.updateTicketStatus("T-1003", TicketStatus.RESOLVED,
+        helpDesk.updateTicketStatus(residentialTicket.getId(), TicketStatus.RESOLVED,
                 "The new adapter stopped the router restarts.");
-        helpDesk.updateTicketStatus("T-1003", TicketStatus.CLOSED,
+        helpDesk.updateTicketStatus(residentialTicket.getId(), TicketStatus.CLOSED,
                 "Customer confirmed stable service for two days.");
 
-        helpDesk.createTicket("T-1004", "C-BIZ-001", "P-105",
-                TicketType.SERVICE_REQUEST, "Add a firewall rule",
+        helpDesk.createTicket("C-BIZ-001", "P-105", TicketType.SERVICE_REQUEST,
+                "Add a firewall rule",
                 "Allow the new accounting server to reach the tax reporting service.");
     }
 }
