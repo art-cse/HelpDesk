@@ -1,5 +1,6 @@
 package helpdesk;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 public class HelpDesk {
@@ -213,6 +214,11 @@ public class HelpDesk {
     }
 
     public ArrayList<Ticket> filterTickets(String keyword, TicketStatus status, String agentId) {
+        return filterTickets(keyword, status, agentId, ReportPeriod.ALL_TIME, LocalDate.now());
+    }
+
+    public ArrayList<Ticket> filterTickets(String keyword, TicketStatus status, String agentId,
+            ReportPeriod period, LocalDate reportDate) {
         ArrayList<Ticket> results = new ArrayList<Ticket>();
         String searchText = keyword == null ? "" : keyword.trim().toLowerCase();
 
@@ -226,7 +232,8 @@ public class HelpDesk {
             boolean matchesStatus = status == null || ticket.getStatus() == status;
             boolean matchesAgent = matchesAgentFilter(ticket, agentId);
 
-            if (matchesText && matchesStatus && matchesAgent) {
+            if (matchesText && matchesStatus && matchesAgent
+                    && period.includes(ticket.getCreatedAt(), reportDate)) {
                 results.add(ticket);
             }
         }

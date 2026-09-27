@@ -26,3 +26,7 @@ if ($LASTEXITCODE -ne 0) {
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
+& $javaPath -cp $classPath helpdesk.TicketReportTest
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}

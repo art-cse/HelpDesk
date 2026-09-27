@@ -12,6 +12,7 @@ FiberNet HelpDesk is a Java 17 Swing application made for a university Object-Or
 - Ticket registration with category-based priority
 - Separate support-agent assignment and reassignment
 - Ticket status updates and complete status history
+- Admin ticket counts for the last 30/60 days, current quarter, and current year, with CSV export
 - Customer and agent views limited to their own records
 
 ## OOP concepts
@@ -46,6 +47,11 @@ powershell -ExecutionPolicy Bypass -File .\run.ps1
 ```
 
 The Swing login window is the main application entry point.
+
+As admin, open **Tickets** and choose **Created in** to see a ticket count for a period.
+The 30/60-day ranges include today; quarter/year run from their calendar start through today.
+Search, status, and agent filters also apply. **Export CSV...** saves the count, date range,
+filters, and matching tickets. Reports use the data currently loaded in memory.
 
 ## Build and test
 
