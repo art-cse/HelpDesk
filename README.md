@@ -37,54 +37,7 @@ FiberNet HelpDesk is a Java 17 Swing application made for a university Object-Or
 | Residential customer | `customer1` | `customer123` |
 | Business customer | `business1` | `business123` |
 
-## Run from source
 
-Open PowerShell in the repository and run:
-
-```powershell
-cd .\helpdesk-application
-powershell -ExecutionPolicy Bypass -File .\run.ps1
-```
-
-The Swing login window is the main application entry point.
-
-As admin, open **Tickets** and choose **Created in** to see a ticket count for a period.
-The 30/60-day ranges include today; quarter/year run from their calendar start through today.
-Search, status, and agent filters also apply. **Export CSV...** saves the count, date range,
-filters, and matching tickets. Reports use the data currently loaded in memory.
-
-## Build and test
-
-Java 17 or newer is required.
-
-Compile the source and tests:
-
-```powershell
-cd .\helpdesk-application
-powershell -ExecutionPolicy Bypass -File .\build.ps1
-```
-
-Run the domain and role tests:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\test.ps1
-```
-
-Create the runnable JAR and Windows application:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\package.ps1
-```
-
-Generated files are written to `helpdesk-application\dist\`. They are not committed because they can be recreated with the packaging script.
-
-After packaging, run the JAR with:
-
-```powershell
-java -jar .\dist\FiberNetHelpDesk.jar
-```
-
-The Windows application is created at:
 
 ```text
 dist\FiberNet HelpDesk\FiberNet HelpDesk.exe
